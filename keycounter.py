@@ -17,7 +17,8 @@ if __name__ == '__main__':
     key_counter.sort(key=lambda e: e[2])
     print('idx', 'id', 'name', 'cnt')
     print('-'*10)
-    for idx, (key_id, key_name, cnt) in enumerate(reversed(key_counter), 1):
+    for idx, (key_id, key_name, cnt) in enumerate(reversed(key_counter[-10:]), 1):
         print(idx, key_id, key_name, cnt)
-
+    # logging.basicConfig(level=logging.DEBUG)
+    niz.read_keymap()
     niz.close()
