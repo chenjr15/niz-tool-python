@@ -5,8 +5,9 @@ from niz import *
 
 if __name__ == '__main__':
 
-    hiddev = choice_device(VID, PID_NIZ_84EC_S_BLE, [
-                           ('product_string', 'Program')])
+    # hiddev = choice_device(VID, PID_NIZ_84EC_S_BLE, [
+    #                        ('product_string', 'Program')])
+    hiddev = choice_device()
     if hiddev == None:
         exit(-1)
     niz = Niz(hiddev)
@@ -20,5 +21,7 @@ if __name__ == '__main__':
     for idx, (key_id, key_name, cnt) in enumerate(reversed(key_counter[-10:]), 1):
         print(idx, key_id, key_name, cnt)
     # logging.basicConfig(level=logging.DEBUG)
-    niz.read_keymap()
+    keymaps = niz.read_keymap()
+    for key in keymaps:
+        print(key)
     niz.close()

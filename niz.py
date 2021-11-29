@@ -132,10 +132,10 @@ HWCODE = {
     123: 'WWW Stop',
     124: 'WWW Refresh',
     125: 'WWW Favorites',
-    126: 'Mouse Mouse Left',
-    127: 'Mouse Mouse Right',
-    128: 'Mouse Mouse Up',
-    129: 'Mouse Mouse Down',
+    126: 'Mouse Left',
+    127: 'Mouse Right',
+    128: 'Mouse Up',
+    129: 'Mouse Down',
     130: 'Mouse Key Left',
     131: 'Mouse Key Right',
     132: 'Mouse Key Middle',
@@ -184,7 +184,7 @@ HWCODE = {
     175: 'Key Response Delay',
     176: 'USB Report Rate',
     177: 'Key Scan Period',
-    178: 'unknown',
+    178: 'App Lock',
     179: 'unknown',
     180: 'unknown',
     181: 'unknown',
@@ -265,8 +265,8 @@ HWCODE = {
 LEVEL2NAME = [
     'UNKNOWN',
     'Normal',
-    'R-FN',
-    'L-FN',
+    'R - FN',
+    'L - FN',
 ]
 UNSET = 0x000
 SINGLE_KEY = 0x0001
@@ -314,6 +314,7 @@ class Command:
     READ_XXX = 0xe2
     READ_COUNTER = 0xe3
     XXX_END = 0xe6
+
 
 VID = 0x0483
 PID_NIZ_84EC_S_BLE = 0x5129
@@ -458,7 +459,19 @@ class KeyLayer:
             self.hwcodes = [code for code in data[6:] if code]
 
     def __str__(self) -> str:
-        s = f"{LEVEL2NAME[self.level]} {self.keyid} {MODE2NAME[self.mode]} "
+        s = f"[{LEVEL2NAME[self.level]}] "
+        if self.mode in (MACRO_DEF, SIM_HIT,):
+            s += f'{MODE2NAME[self.mode]} '
+        if len(self.hwcodes) == 1:
+            s += HWCODE[self.hwcodes[0]]
+        elif len(self.hwcodes) > 1:
+            s += ' + '.join([HWCODE[code] for code in self.hwcodes])
+        return s
+
+    def __repr__(self) -> str:
+        s = f"[#{self.keyid}:{LEVEL2NAME[self.level]}] "
+        if self.mode in (MACRO_DEF, SIM_HIT,):
+            s += f'{MODE2NAME[self.mode]} '
         if len(self.hwcodes) == 1:
             s += HWCODE[self.hwcodes[0]]
         elif len(self.hwcodes) > 1:
@@ -474,9 +487,10 @@ class PhysicalKey:
                   3. Left FN
     '''
 
-    def __init__(self, data=None) -> None:
-        self.keyid = 0
+    def __init__(self, keyid=0, data=None, counter=0) -> None:
+        self.keyid = keyid
         self.layers = {}
+        self.counter = counter
         if data:
             self.read(data)
 
@@ -486,10 +500,13 @@ class PhysicalKey:
         self.layers[keylayer.level] = keylayer
 
     def __str__(self) -> str:
-        s = f"#{self.keyid}"
+        s = f"#{self.keyid} {self.counter}"
         for layer in self.layers.values():
             s += f"\n\t{layer}"
         return s
+
+    def __repr__(self) -> str:
+        return f"#{self.keyid}:{self.counter} {self.layers}"
 
 
 class Niz:
@@ -498,6 +515,7 @@ class Niz:
         self.hiddev = hiddev
         self.device.open_path(hiddev.path)
         self.device.set_nonblocking(1)
+        self.keys = [PhysicalKey(i) for i in range(85)]
 
     def version(self) -> str:
         '''
@@ -525,7 +543,7 @@ class Niz:
         7 操控键 00:01
         8 电源键 00:01
         '''
-        keymap = [PhysicalKey() for _ in range(85)]
+        keymap = self.keys
         # nCCa2CC* -> uint16 BE,uint8,uint8,2 char,uint8,uint8*,
         self.send(Command.READ_KEY_MAP)
         while True:
@@ -542,6 +560,7 @@ class Niz:
         '''
         self.send(Command.READ_COUNTER)
         counters = [0]
+        idx = 0
         while True:
             data = self.read(64)
             if not data or data[1] != Command.READ_COUNTER:
@@ -549,6 +568,13 @@ class Niz:
             # 2 byte command, 15*4 byte counter(uint32 LE), 1 byte unused
             _cmd, _,  *cnt, _ = struct.unpack('<Hb15Ib', bytes(data))
             counters.extend(cnt)
+            for i, c in enumerate(cnt, start=1):
+                if (idx*15+i) > 84:
+                    break
+                self.keys[idx*15+i].counter = c
+
+            idx += 1
+
         return counters
 
     def send(self, cmd, data="") -> int:
