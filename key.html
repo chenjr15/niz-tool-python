@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+</head>
+<style>
+    :root {}
+
+    div.row {
+        display: flex;
+    }
+
+
+
+    div.key {
+        border-radius: 6px;
+
+    }
+
+    div.placeholder {}
+</style>
+
+<body>
+    <div class="app" x-data="appdata">
+        <template x-for="row in rows">
+            <div class="row">
+                <template x-for="col in row">
+                    <div class="key" :style="col.style">
+                        <!-- <div></div> -->
+                        <div class="label" x-text="col.label">F1</div>
+                        <div class="counter"></div>
+                    </div>
+                </template>
+            </div>
+
+
+        </template>
+    </div>
+</body>
+<script src="./layout.js"></script>
+<script>
+    const [config, ...rows] = layout;
+    let formated_rows = []
+    console.log(config)
+    console.log(rows)
+    let width = 1;
+    let color = '#000'
+    for (const row of rows) {
+        let formated_row = []
+        for (const col of row) {
+            if (Object.prototype.toString.call(col) === "[object String]") {
+                let label = col;
+                formated_row.push({ label, width, color, style: `--key-width-scale:${width}` })
+                width = 1;
+                // color = '#000'
+
+            } else {
+                if (col['w']) {
+                    width = col['w']
+                }
+                if (col['c']) {
+                    color = col['c']
+                }
+
+            }
+        }
+        formated_rows.push(formated_row)
+        console.log(formated_row)
+    }
+    var appdata = { rows: formated_rows }
+    // Alpine.data('appdata', () => { rows: formated_rows });
+
+</script>
+
+</html>
