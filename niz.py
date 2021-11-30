@@ -556,7 +556,7 @@ class Niz:
 
     def read_counter(self):
         '''
-        read press time of each key
+        read press time of each key, key starts with 1 , 0 is not set
         '''
         self.send(Command.READ_COUNTER)
         counters = [0]
