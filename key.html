@@ -11,7 +11,7 @@
 </head>
 <style>
     :root {
-        --label-font-size:1em;
+        --label-font-size: 1em;
         --key-width: calc(var(--label-font-size)*4);
         --key-height: calc(var(--label-font-size)*4);
         --key-width-scale: 1;
@@ -37,11 +37,12 @@
         /* background-color: rgb(223, 246, 253); */
         border-style: solid;
         box-shadow: 3px 2px 5px rgb(81 187 188);
-        
+
         /* color: lightsalmon; */
         /* font-weight: bolder; */
         cursor: pointer;
     }
+
     div.key>.label-wrapper:active {
         background-color: rgb(223, 246, 253);
         box-shadow: none;
@@ -54,12 +55,12 @@
     div.key>.label-wrapper {
         font-size: var(--label-font-size);
         font-family: Helvetica;
-        
+
         border-radius: 6px;
         border: #9e9e9e;
         border-style: solid;
         background-color: #fff;
-          
+
         /* 高度撑满容器 */
         height: -webkit-fill-available;
         height: -moz-available;
@@ -72,13 +73,22 @@
 
 <body>
     <div class="app" x-data="appdata()">
-        <template x-for="row in rows">
+        <div>
+            <h1 x-text="curLayerName"></h1>
+            <!-- 切换层的代码 -->
+            <template x-for="(name,idx) in layerNames">
+                <button x-text="name" @click="curLayerIdx=idx"></button>
+            </template>
+
+        </div>
+        <template x-for="row in layout">
             <div class="row">
                 <template x-for="col in row">
-                    <div :class="col.class_" :style="col.style">
-                        <div class="label-wrapper">
+                    <div :class="col.type" :style="col.style">
+                        <div class="label-wrapper" x-show="col.type=='key'">
                             <!-- <div></div> -->
-                            <div class="label" x-text="col.label">F1</div>
+                            
+                            <div class="label" x-text="curLayer?curLayer[col.hwid]:''">F1</div>
                             <div class="counter"></div>
                         </div>
                     </div>
@@ -91,54 +101,58 @@
 </body>
 <script src="./layout.js"></script>
 <script>
-    function Key( label, width=1,height=1, color='', class_= 'key',hwid=0) {
-        return {hwid,label, width,height, color, class_, style: `--key-width-scale:${width}` }
-    }
+    // function Key( label, width=1,height=1, color='', class_= 'key',hwid=0) {
+    //     return {hwid,label, width,height, color, class_, style: `--key-width-scale:${width}` }
+    // }
 
 
-    const [config, ...rows] = layout;
-    let formated_rows = []
-    console.log(config)
-    console.log(rows)
-    let width = 1;
-    let height=1;
-    let color = '#fff';
-    let id=1;
-    for (const row of rows) {
-        let formated_row = []
-        for (const col of row) {
-            if (Object.prototype.toString.call(col) === "[object String]") {
-                let label = col;
-                formated_row.push(Key(label, width,height,color )  )
-                width = 1;
-                // color = '#000'
-
-            } else {
-                if (col['w']) {
-                    width = col['w']
-                }
-                if (col['c']) {
-                    color = col['c']
-                }
-                if (col['x']) {
-                    formated_row.push(Key('', col['x'],1,'', class_= 'placeholder' ))
-                }
-
-            }
+    class Key {
+        constructor(label, width = 1, height = 1, color = '', type = 'key', hwid = 0) {
+            this.label = label;
+            this.width = width;
+            this.height = height;
+            this.color = color;
+            this.type = type;
+            this.hwid = hwid;
+            this.style = `--key-width-scale:${width}`
         }
-        formated_rows.push(formated_row)
-        console.log(formated_row)
+    }
+    class Layer {
+        constructor(name, rows) {
+            this.name = name
+            this.rows = rows
+
+        }
     }
 
+    const {config, layout} = keyboard;
+    const defaultKeyCaps = ['',...layout.flat().filter(k=>k.type=='key').map(k=>k.label)]
+    console.log(defaultKeyCaps)
+    let customized_layers=[];
     function appdata() {
         return {
-            rows: formated_rows,
-            init() { }
+            numKeys: 84,
+            /**
+             * Layout, 键盘的布局，每行有几个键，长度是多少，不含按键映射信息，用行的数组来表示
+             * */
+            layout,
+            defaultKeyCaps,
+            layerNames: ['Default','Normal', 'R-FN', 'L-FN',],
+            layers: [
+            ...customized_layers,defaultKeyCaps
+            ],
+            counters:[],
+            curLayerIdx: 0,
+            get curLayer() {
+                return this.layers[this.curLayerIdx]
+            },
+            get curLayerName() {
+                return this.layerNames[this.curLayerIdx]
+            },
+            init() {}
         };
     }
     // Alpine.start();
-
-
 </script>
 
 </html>
